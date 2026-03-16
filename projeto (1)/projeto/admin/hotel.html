@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Mapa do Hotel — Travel Church Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&family=Cinzel:wght@400;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../css/shared.css"/>
+  <style>
+    .floor-section{margin-bottom:32px}
+    .floor-label{
+      font-family:var(--font-b);font-size:0.66rem;font-weight:600;
+      color:var(--gold);letter-spacing:0.14em;text-transform:uppercase;
+      margin-bottom:14px;display:flex;align-items:center;gap:8px;
+    }
+    .floor-label::after{content:'';flex:1;height:1px;background:var(--surface-3)}
+
+    .rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+
+    .room-card{
+      background:var(--surface);border:1px solid var(--surface-3);
+      border-radius:var(--r-lg);padding:18px 16px;cursor:pointer;
+      transition:all var(--mid) var(--ease);position:relative;overflow:hidden;
+    }
+    .room-card::before{
+      content:'';position:absolute;top:0;left:0;right:0;height:2px;
+      transition:opacity var(--mid);opacity:0;
+    }
+    .room-card:hover{border-color:var(--gold-dim);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
+    .room-card:hover::before{opacity:1}
+    .room-card.full{border-color:rgba(232,85,85,0.25)}
+    .room-card.full::before{background:var(--danger);opacity:1}
+    .room-card.partial{border-color:rgba(232,163,58,0.2)}
+    .room-card.partial::before{background:var(--warning);opacity:1}
+    .room-card.empty::before{background:var(--success);opacity:0.7}
+
+    .room-number{font-family:var(--font-s);font-size:1.6rem;font-weight:300;color:var(--gold);margin-bottom:3px}
+    .room-type{font-size:0.7rem;color:var(--text-3);margin-bottom:12px;letter-spacing:0.03em}
+
+    .occ-bar-wrap{display:flex;align-items:center;gap:8px;font-size:0.72rem;color:var(--text-2)}
+    .occ-bar{flex:1;height:4px;background:var(--surface-3);border-radius:2px;overflow:hidden}
+    .occ-fill{height:100%;border-radius:2px;transition:width var(--mid)}
+    .occ-fill.low   {background:var(--success)}
+    .occ-fill.medium{background:var(--warning)}
+    .occ-fill.full  {background:var(--danger)}
+
+    .room-occupants-preview{margin-top:10px;display:flex;flex-wrap:wrap;gap:4px}
+    .mini-avatar{
+      width:24px;height:24px;border-radius:50%;
+      background:var(--surface-3);border:1px solid var(--surface-2);
+      display:flex;align-items:center;justify-content:center;
+      font-size:0.56rem;font-weight:700;color:var(--text-2);
+      text-transform:uppercase;
+    }
+
+    /* Summary list in modal */
+    .occ-list{margin-bottom:16px}
+  </style>
+</head>
+<body>
+<div class="admin-layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <img src="../img/Adobe Express - file.png" style="max-height:28px;filter:drop-shadow(0 0 8px rgba(201,165,90,0.4))" alt="Logo"/>
+      <span>Travel Church</span>
+    </div>
+    <nav class="sidebar-nav">
+      <span class="nav-section-label">Principal</span>
+      <a href="index.html"      class="nav-link"><i class="fa-solid fa-chart-pie"></i> Visão Geral</a>
+      <a href="pagamentos.html" class="nav-link"><i class="fa-solid fa-credit-card"></i> Pagamentos</a>
+      <a href="viajantes.html"  class="nav-link"><i class="fa-solid fa-users"></i> Viajantes</a>
+      <span class="nav-section-label">Logística</span>
+      <a href="onibus.html"     class="nav-link"><i class="fa-solid fa-bus"></i> Mapa do Ônibus</a>
+      <a href="hotel.html"      class="nav-link active"><i class="fa-solid fa-hotel"></i> Mapa do Hotel</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" onclick="DB.logout()">
+        <i class="fa-solid fa-right-from-bracket"></i> Sair
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <button class="sidebar-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <span class="topbar-title">Mapa do Hotel</span>
+      <div class="topbar-right">
+        <div class="topbar-user"><i class="fa-solid fa-user-shield"></i> Administrador</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="page-header">
+        <h1>Mapa de Apartamentos</h1>
+        <p>Clique em um quarto para gerenciar os ocupantes</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row" id="hotelStats" style="grid-template-columns:repeat(4,1fr)"></div>
+
+      <!-- Filter -->
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setRoomFilter('todos',this)">Todos</button>
+        <button class="filter-btn" onclick="setRoomFilter('disponivel',this)">Com Vagas</button>
+        <button class="filter-btn" onclick="setRoomFilter('cheio',this)">Lotados</button>
+        <button class="filter-btn" onclick="setRoomFilter('vazio',this)">Vazios</button>
+      </div>
+
+      <!-- Rooms by floor -->
+      <div id="roomsContainer"></div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Room Modal -->
+<div class="modal-overlay hidden" id="modal">
+  <div class="modal-box">
+    <h3 id="modalTitle"><i class="fa-solid fa-door-open"></i> Quarto</h3>
+
+    <div class="occ-list" id="occupantsList"></div>
+
+    <div class="field-group">
+      <label>Adicionar Viajante</label>
+      <select id="addSelect">
+        <option value="">— Selecione —</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Fechar</button>
+      <button class="btn btn-gold btn-sm" onclick="addToRoom()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/data.js"></script>
+<script>
+  DB.requireAdmin();
+
+  let currentRoomId = null;
+  let roomFilter = 'todos';
+
+  function renderStats() {
+    const rooms = DB.hotelRooms;
+    const totalCap  = rooms.reduce((s,r)=>s+r.capacidade,0);
+    const totalOcup = rooms.reduce((s,r)=>s+r.ocupantes.length,0);
+    const cheios    = rooms.filter(r=>r.ocupantes.length>=r.capacidade).length;
+    const vazios    = rooms.filter(r=>r.ocupantes.length===0).length;
+
+    document.getElementById('hotelStats').innerHTML = [
+      {label:'Total de Quartos', value:rooms.length, icon:'fa-hotel', cls:'stat-blue'},
+      {label:'Vagas Ocupadas', value:`${totalOcup}/${totalCap}`, icon:'fa-bed', cls:'stat-green'},
+      {label:'Quartos Lotados', value:cheios, icon:'fa-lock', cls:'stat-red'},
+      {label:'Quartos Disponíveis', value:rooms.length-cheios, icon:'fa-unlock', cls:'stat-yellow'},
+    ].map(s=>`
+      <div class="stat-card ${s.cls}">
+        <i class="fa-solid ${s.icon}"></i>
+        <div class="stat-card-info">
+          <span class="stat-card-value">${s.value}</span>
+          <span class="stat-card-label">${s.label}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function setRoomFilter(f, btn) {
+    roomFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderRooms();
+  }
+
+  function renderRooms() {
+    let rooms = DB.hotelRooms;
+    if (roomFilter==='disponivel') rooms = rooms.filter(r=>r.ocupantes.length<r.capacidade&&r.ocupantes.length>0);
+    if (roomFilter==='cheio')      rooms = rooms.filter(r=>r.ocupantes.length>=r.capacidade);
+    if (roomFilter==='vazio')      rooms = rooms.filter(r=>r.ocupantes.length===0);
+
+    // Group by floor
+    const floor1 = rooms.filter(r=>r.id.startsWith('1'));
+    const floor2 = rooms.filter(r=>r.id.startsWith('2'));
+
+    const container = document.getElementById('roomsContainer');
+    container.innerHTML = '';
+
+    [['1º Andar', floor1], ['2º Andar', floor2]].forEach(([label, list]) => {
+      if (!list.length) return;
+      const section = document.createElement('div');
+      section.className = 'floor-section';
+      section.innerHTML = `<div class="floor-label"><i class="fa-solid fa-layer-group"></i> ${label}</div>
+        <div class="rooms-grid">${list.map(renderRoomCard).join('')}</div>`;
+      container.appendChild(section);
+    });
+
+    if (!rooms.length) {
+      container.innerHTML = `<div class="empty-state" style="margin-top:40px"><i class="fa-solid fa-hotel"></i><p>Nenhum quarto encontrado</p></div>`;
+    }
+  }
+
+  function renderRoomCard(room) {
+    const occ = room.ocupantes.length;
+    const cap = room.capacidade;
+    const pct = Math.round((occ/cap)*100);
+    const fillClass = pct>=100?'full':pct>=60?'medium':'low';
+    const cardClass = pct>=100?'full':pct>0?'partial':'empty';
+
+    const initials = room.ocupantes.map(cpf => {
+      const t = DB.findTraveler(cpf);
+      return t ? `<div class="mini-avatar" title="${t.nome}">${t.nome.split(' ').map(w=>w[0]).slice(0,2).join('')}</div>` : '';
+    }).join('');
+
+    return `
+      <div class="room-card ${cardClass}" onclick="openRoomModal('${room.id}')">
+        <div class="room-number">Qto ${room.id}</div>
+        <div class="room-type">${room.tipo}</div>
+        <div class="occ-bar-wrap">
+          <span>${occ}/${cap}</span>
+          <div class="occ-bar"><div class="occ-fill ${fillClass}" style="width:${pct}%"></div></div>
+        </div>
+        ${initials ? `<div class="room-occupants-preview">${initials}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function openRoomModal(roomId) {
+    currentRoomId = roomId;
+    const room = DB.hotelRooms.find(r=>r.id===roomId);
+    if (!room) return;
+
+    document.getElementById('modalTitle').innerHTML = `<i class="fa-solid fa-door-open"></i> Quarto ${room.id} — ${room.tipo} <span style="font-size:0.8rem;color:var(--text-3)">(Cap: ${room.capacidade})</span>`;
+
+    // Occupants list
+    const ol = document.getElementById('occupantsList');
+    ol.innerHTML = room.ocupantes.length
+      ? room.ocupantes.map(cpf => {
+          const t = DB.findTraveler(cpf);
+          return `
+            <div class="occupant-item">
+              <span><i class="fa-solid fa-user" style="color:var(--text-3);margin-right:8px"></i>${t?t.nome:cpf}</span>
+              <button onclick="removeFromRoom('${roomId}','${cpf}')"><i class="fa-solid fa-xmark"></i> Remover</button>
+            </div>
+          `;
+        }).join('')
+      : `<p style="color:var(--text-3);font-size:0.82rem;margin-bottom:12px">Nenhum ocupante ainda</p>`;
+
+    // Add select
+    const select = document.getElementById('addSelect');
+    select.innerHTML = `<option value="">— Selecione —</option>` +
+      DB.travelers.filter(t=>!room.ocupantes.includes(t.cpf)).map(t=>
+        `<option value="${t.cpf}">${t.nome} (${t.familia||'sem família'})</option>`
+      ).join('');
+
+    document.getElementById('modal').classList.remove('hidden');
+  }
+
+  function addToRoom() {
+    const room = DB.hotelRooms.find(r=>r.id===currentRoomId);
+    const cpf = document.getElementById('addSelect').value;
+    if (!cpf) { showToast('Selecione um viajante.','error'); return; }
+    if (room.ocupantes.length>=room.capacidade) { showToast('Quarto lotado!','error'); return; }
+
+    room.ocupantes.push(cpf);
+    const rooms = DB.hotelRooms;
+    const idx = rooms.findIndex(r=>r.id===currentRoomId);
+    rooms[idx] = room;
+    DB.hotelRooms = rooms;
+
+    const t = DB.findTraveler(cpf);
+    if (t) { t.quarto=currentRoomId; t.tipoQuarto=room.tipo; DB.saveTraveler(t); }
+
+    closeModal();
+    openRoomModal(currentRoomId);
+    renderRooms();
+    renderStats();
+    showToast(`${t?.nome||cpf} adicionado ao Quarto ${currentRoomId}!`);
+  }
+
+  function removeFromRoom(roomId, cpf) {
+    const rooms = DB.hotelRooms;
+    const room = rooms.find(r=>r.id===roomId);
+    room.ocupantes = room.ocupantes.filter(c=>c!==cpf);
+    DB.hotelRooms = rooms;
+
+    const t = DB.findTraveler(cpf);
+    if (t) { t.quarto=null; t.tipoQuarto=null; DB.saveTraveler(t); }
+
+    closeModal();
+    openRoomModal(roomId);
+    renderRooms();
+    renderStats();
+    showToast('Viajante removido do quarto.');
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+    currentRoomId = null;
+  }
+
+  document.getElementById('modal').addEventListener('click', e=>{
+    if(e.target===document.getElementById('modal')) closeModal();
+  });
+
+  renderStats();
+  renderRooms();
+</script>
+</body>
+</html>

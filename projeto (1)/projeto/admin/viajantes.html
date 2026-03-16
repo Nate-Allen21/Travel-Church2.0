@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Viajantes — Travel Church Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&family=Cinzel:wght@400;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../css/shared.css"/>
+  <style>
+    .tabs{display:flex;gap:0;border-bottom:1px solid var(--surface-2);margin-bottom:24px}
+    .tab-btn{
+      padding:11px 20px;background:none;border:none;border-bottom:2px solid transparent;
+      color:var(--text-3);cursor:pointer;font-family:var(--font-b);font-size:0.8rem;
+      font-weight:500;transition:all var(--fast);letter-spacing:0.04em;
+      display:flex;align-items:center;gap:7px;margin-bottom:-1px;
+    }
+    .tab-btn:hover{color:var(--text-2)}
+    .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+    .alert-box{
+      padding:13px 16px;border-radius:var(--r-sm);
+      display:flex;align-items:flex-start;gap:10px;
+      font-size:0.845rem;line-height:1.55;margin-bottom:16px;
+    }
+    .alert-info{background:rgba(74,144,217,0.07);border:1px solid rgba(74,144,217,0.16);color:#80b0e8}
+  </style>
+</head>
+<body>
+<div class="admin-layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <img src="../img/Adobe Express - file.png" style="max-height:28px;filter:drop-shadow(0 0 8px rgba(201,165,90,0.4))" alt="Logo"/>
+      <span>Travel Church</span>
+    </div>
+    <nav class="sidebar-nav">
+      <span class="nav-section-label">Principal</span>
+      <a href="index.html"      class="nav-link"><i class="fa-solid fa-chart-pie"></i> Visão Geral</a>
+      <a href="pagamentos.html" class="nav-link"><i class="fa-solid fa-credit-card"></i> Pagamentos</a>
+      <a href="viajantes.html"  class="nav-link active"><i class="fa-solid fa-users"></i> Viajantes</a>
+      <span class="nav-section-label">Logística</span>
+      <a href="onibus.html"     class="nav-link"><i class="fa-solid fa-bus"></i> Mapa do Ônibus</a>
+      <a href="hotel.html"      class="nav-link"><i class="fa-solid fa-hotel"></i> Mapa do Hotel</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" onclick="DB.logout()">
+        <i class="fa-solid fa-right-from-bracket"></i> Sair
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <button class="sidebar-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <span class="topbar-title">Viajantes</span>
+      <div class="topbar-right">
+        <div class="topbar-user"><i class="fa-solid fa-user-shield"></i> Administrador</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="page-header">
+        <h1>Gestão de Viajantes</h1>
+        <p>Cadastros, menores de idade e necessidades especiais</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('tabAll',this)"><i class="fa-solid fa-list"></i> Todos</button>
+        <button class="tab-btn" onclick="showTab('tabMinors',this)"><i class="fa-solid fa-child"></i> Menores de Idade</button>
+        <button class="tab-btn" onclick="showTab('tabSpecial',this)"><i class="fa-solid fa-heart-pulse"></i> Necessidades Especiais</button>
+      </div>
+
+      <!-- Tab: All travelers -->
+      <div class="tab-panel active" id="tabAll">
+        <div class="filter-bar">
+          <button class="filter-btn active" onclick="setTransFilter('todos',this)">Todos</button>
+          <button class="filter-btn" onclick="setTransFilter('onibus',this)">🚌 Ônibus</button>
+          <button class="filter-btn" onclick="setTransFilter('proprio',this)">🚗 Próprio</button>
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchAll" placeholder="Buscar viajante…" oninput="renderAll()"/>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>CPF</th>
+                <th>Família / Grupo</th>
+                <th>Parentesco</th>
+                <th>Faixa Etária</th>
+                <th>Transporte</th>
+                <th>Pagamento</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="allBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Minors -->
+      <div class="tab-panel" id="tabMinors">
+        <div class="alert-box alert-info">
+          <i class="fa-solid fa-circle-info"></i>
+          Todos os menores listados devem estar acompanhados de seu responsável cadastrado durante toda a viagem.
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome do Menor</th>
+                <th>CPF</th>
+                <th>Data de Nascimento</th>
+                <th>Responsável</th>
+                <th>CPF do Responsável</th>
+                <th>Família</th>
+              </tr>
+            </thead>
+            <tbody id="minorsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Special needs -->
+      <div class="tab-panel" id="tabSpecial">
+        <div class="alert-box alert-info">
+          <i class="fa-solid fa-circle-info"></i>
+          Viajantes com necessidades especiais ou alergias declaradas. Garanta que a equipe esteja ciente.
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>CPF</th>
+                <th>Alergia / Necessidade Especial</th>
+                <th>Transporte</th>
+                <th>Quarto</th>
+              </tr>
+            </thead>
+            <tbody id="specialBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay hidden" id="modal">
+  <div class="modal-box modal-lg">
+    <h3><i class="fa-solid fa-user-pen"></i> Editar Viajante</h3>
+    <div class="form-grid-2">
+      <div class="field-group"><label>Nome Completo</label><input type="text" id="eNome"/></div>
+      <div class="field-group"><label>E-mail</label><input type="email" id="eEmail"/></div>
+      <div class="field-group"><label>Telefone</label><input type="text" id="eTel"/></div>
+      <div class="field-group"><label>Família / Grupo</label><input type="text" id="eFamilia"/></div>
+      <div class="field-group">
+        <label>Parentesco</label>
+        <select id="eParentesco">
+          <option value="">Selecione…</option>
+          <option value="conjuge">Cônjuge</option>
+          <option value="filho">Filho(a)</option>
+          <option value="pai">Pai/Mãe</option>
+          <option value="irmao">Irmão/Irmã</option>
+          <option value="avo">Avô/Avó</option>
+          <option value="amigo">Amigo(a) da Igreja</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Status Pagamento</label>
+        <select id="ePayStatus">
+          <option value="analise">Em Análise</option>
+          <option value="pendente">Pendente</option>
+          <option value="pago">Pago</option>
+          <option value="desistiu">Desistência</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-gold btn-sm" onclick="saveEdit()">Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/data.js"></script>
+<script>
+  DB.requireAdmin();
+
+  let transFilter = 'todos';
+  let editCpf = null;
+
+  const statusMap = {
+    pago:{label:'Pago',cls:'badge-paid'},
+    pendente:{label:'Pendente',cls:'badge-pending'},
+    analise:{label:'Em Análise',cls:'badge-analise'},
+    desistiu:{label:'Desistência',cls:'badge-cancel'},
+  };
+
+  const parentMap = {conjuge:'Cônjuge',filho:'Filho(a)',pai:'Pai/Mãe',irmao:'Irmão/Irmã',avo:'Avô/Avó',amigo:'Amigo(a)',outro:'Outro'};
+
+  function showTab(id, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function setTransFilter(f, btn) {
+    transFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderAll();
+  }
+
+  function renderAll() {
+    const search = document.getElementById('searchAll').value.toLowerCase();
+    let data = DB.travelers;
+    if (transFilter !== 'todos') data = data.filter(t=>t.transporte===transFilter);
+    if (search) data = data.filter(t=>t.nome.toLowerCase().includes(search)||t.cpf.includes(search));
+
+    const tbody = document.getElementById('allBody');
+    if (!data.length) {
+      tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-inbox"></i><p>Nenhum viajante encontrado</p></div></td></tr>`;
+      return;
+    }
+    const st = statusMap;
+    tbody.innerHTML = data.map(t=>{
+      const pay = st[t.payStatus]||st.analise;
+      return `
+        <tr>
+          <td><strong style="color:var(--text)">${t.nome}</strong></td>
+          <td style="font-family:monospace;font-size:0.78rem">${t.cpf}</td>
+          <td>${t.familia||'—'}</td>
+          <td>${parentMap[t.parentesco]||t.parentesco||'—'}</td>
+          <td><span class="badge ${t.idade==='menor'?'badge-menor':'badge-maior'}">${t.idade==='menor'?'Menor':'Maior'}</span></td>
+          <td><span class="badge ${t.transporte==='onibus'?'badge-onibus':'badge-proprio'}">${t.transporte==='onibus'?'🚌 Ônibus':'🚗 Próprio'}</span></td>
+          <td><span class="badge ${pay.cls}">${pay.label}</span></td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="openEdit('${t.cpf}')">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function renderMinors() {
+    const menores = DB.travelers.filter(t=>t.idade==='menor');
+    const tbody = document.getElementById('minorsBody');
+    if (!menores.length) {
+      tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-child"></i><p>Nenhum menor de idade cadastrado</p></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = menores.map(t=>{
+      const resp = t.responsavelCPF ? DB.findTraveler(t.responsavelCPF) : null;
+      return `
+        <tr>
+          <td><strong style="color:var(--text)">${t.nome}</strong></td>
+          <td style="font-family:monospace;font-size:0.78rem">${t.cpf}</td>
+          <td>${t.nascimento||'—'}</td>
+          <td>${resp?resp.nome:'<span style="color:var(--danger)">Não informado</span>'}</td>
+          <td style="font-family:monospace;font-size:0.78rem">${t.responsavelCPF||'—'}</td>
+          <td>${t.familia||'—'}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function renderSpecial() {
+    const especiais = DB.travelers.filter(t=>t.alergia==='sim');
+    const tbody = document.getElementById('specialBody');
+    if (!especiais.length) {
+      tbody.innerHTML=`<tr><td colspan="5"><div class="empty-state"><i class="fa-solid fa-heart-pulse"></i><p>Nenhuma necessidade especial registrada</p></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = especiais.map(t=>`
+      <tr>
+        <td><strong style="color:var(--text)">${t.nome}</strong></td>
+        <td style="font-family:monospace;font-size:0.78rem">${t.cpf}</td>
+        <td style="color:var(--warning)">${t.alergiaDesc||'—'}</td>
+        <td><span class="badge ${t.transporte==='onibus'?'badge-onibus':'badge-proprio'}">${t.transporte==='onibus'?'🚌 Ônibus':'🚗 Próprio'}</span></td>
+        <td>${t.quarto?`Quarto ${t.quarto}`:'<span style="color:var(--text-3)">A definir</span>'}</td>
+      </tr>
+    `).join('');
+  }
+
+  function openEdit(cpf) {
+    editCpf = cpf;
+    const t = DB.findTraveler(cpf);
+    document.getElementById('eNome').value = t.nome;
+    document.getElementById('eEmail').value = t.email;
+    document.getElementById('eTel').value = t.telefone;
+    document.getElementById('eFamilia').value = t.familia||'';
+    document.getElementById('eParentesco').value = t.parentesco||'';
+    document.getElementById('ePayStatus').value = t.payStatus||'analise';
+    document.getElementById('modal').classList.remove('hidden');
+  }
+
+  function saveEdit() {
+    const t = DB.findTraveler(editCpf);
+    t.nome = document.getElementById('eNome').value.trim();
+    t.email = document.getElementById('eEmail').value.trim();
+    t.telefone = document.getElementById('eTel').value.trim();
+    t.familia = document.getElementById('eFamilia').value.trim();
+    t.parentesco = document.getElementById('eParentesco').value;
+    t.payStatus = document.getElementById('ePayStatus').value;
+    DB.saveTraveler(t);
+    closeModal();
+    renderAll();
+    renderMinors();
+    renderSpecial();
+    showToast('Viajante atualizado!');
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+    editCpf = null;
+  }
+
+  document.getElementById('modal').addEventListener('click', e=>{
+    if(e.target===document.getElementById('modal')) closeModal();
+  });
+
+  renderAll();
+  renderMinors();
+  renderSpecial();
+</script>
+</body>
+</html>
