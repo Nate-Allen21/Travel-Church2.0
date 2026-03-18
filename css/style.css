@@ -189,8 +189,9 @@ input[type="date"],select,textarea {
   border:1px solid var(--surface-3); border-radius:var(--r-sm);
   font-family:var(--font-b); font-size:0.925rem; color:var(--text);
   transition:border-color var(--fast),box-shadow var(--fast),background var(--fast);
-  outline:none; -webkit-appearance:none;
+  outline:none; -webkit-appearance:none; -moz-appearance:none; appearance:none;
 }
+
 input:focus,select:focus,textarea:focus {
   border-color:var(--gold-dim);
   box-shadow:0 0 0 3px rgba(201,165,90,0.07);
